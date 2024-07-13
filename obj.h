@@ -5,42 +5,34 @@
 
 #define MAX_LEN 256
 
-typedef struct vertex {
+typedef struct vec3 {
     float x, y, z;
-} vertex_t;
+} vec3_t;
 
-typedef struct texCoord {
+typedef vec3_t vertex_t;
+
+typedef struct texcoord {
     float u, v;
-} texCoord_t;
+} texcoord_t;
 
-typedef struct normal {
-    float x, y, z;
-} normal_t;
+typedef vec3_t normal_t;
 
 typedef struct face {
-    int v1, vt1, vn1;
-    int v2, vt2, vn2;
-    int v3, vt3, vn3;
+    int x, y, z;
 } face_t;
 
-typedef struct full_vertex {
-    vertex_t vertex;
-    texCoord_t texCoord;
-    normal_t normal;
-    int hasTexCoord;
-    int hasNormal;
-} full_vertex_t;
-
 typedef struct obj {
+    char *name;
+
+    size_t vertex_count;
+    size_t texcoord_count;
+    size_t normal_count;
+    size_t face_count;
+
     vertex_t *vertices;
-    texCoord_t *texCoords;
+    texcoord_t *texcoords;
     normal_t *normals;
     face_t *faces;
-    full_vertex_t *fullVertices;
-    size_t numVertices;
-    size_t numTexCoords;
-    size_t numNormals;
-    size_t numFaces;
 } obj_t;
 
 obj_t *obj_load(const char *file);

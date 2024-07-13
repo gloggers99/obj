@@ -1,126 +1,138 @@
 #include "obj.h"
+
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 
 obj_t *obj_load(const char *file) {
     FILE *handle = fopen(file, "r");
+
     if (handle == NULL) {
-        fprintf(stderr, "Failed to open file: %s\n", file);
         return NULL;
     }
 
     obj_t *obj = malloc(sizeof(obj_t));
-    obj->numVertices = 0;
-    obj->numTexCoords = 0;
-    obj->numNormals = 0;
-    obj->numFaces = 0;
 
-    // First pass: count the number of each type of element
+    obj->vertex_count = 0;
+    obj->texcoord_count = 0;
+    obj->normal_count = 0;
+    obj->face_count = 0;
+
+    // first pass, populate count's
     char line[MAX_LEN];
     while (fgets(line, MAX_LEN, handle)) {
-        if (line[0] == 'v') {
+        if (line[0] == 'o') {
+            char tmp[MAX_LEN];
+            if (sscanf(line, "o %255s", tmp) != 1) {
+                fprintf(stderr, "Invalid obj name\n");
+                fclose(handle);
+                free(obj);
+                return NULL;
+            }
+            obj->name = malloc(strlen(tmp) + 1);
+            if (obj->name == NULL) {
+                fprintf(stderr, "Failed to allocate obj name\n");
+                fclose(handle);
+                free(obj);
+                return NULL;
+            }
+            strcpy(obj->name, tmp);
+        } else if (line[0] == 'v') {
             if (line[1] == ' ') {
-                obj->numVertices++;
+                obj->vertex_count++;
             } else if (line[1] == 't') {
-                obj->numTexCoords++;
+                obj->texcoord_count++;
             } else if (line[1] == 'n') {
-                obj->numNormals++;
+                obj->normal_count++;
             }
         } else if (line[0] == 'f') {
-            obj->numFaces++;
+            obj->face_count += 3;
         }
     }
 
-    // Allocate memory for the arrays
-    obj->vertices = malloc(obj->numVertices * sizeof(vertex_t));
-    obj->texCoords = malloc(obj->numTexCoords * sizeof(texCoord_t));
-    obj->normals = malloc(obj->numNormals * sizeof(normal_t));
-    obj->faces = malloc(obj->numFaces * sizeof(face_t));
-    obj->fullVertices = malloc(obj->numFaces * 3 * sizeof(full_vertex_t)); // 3 vertices per face
+    obj->vertices = malloc(sizeof(vertex_t) * obj->vertex_count);
+    obj->texcoords = malloc(sizeof(texcoord_t) * obj->texcoord_count);
+    obj->normals = malloc(sizeof(normal_t) * obj->normal_count);
+    obj->faces = malloc(sizeof(face_t) * obj->face_count);
 
-    // Second pass: read the elements into the arrays
-    fseek(handle, 0, SEEK_SET);
-    size_t vertexIndex = 0;
-    size_t texCoordIndex = 0;
-    size_t normalIndex = 0;
-    size_t faceIndex = 0;
-    size_t fullVertexIndex = 0;
+    unsigned int vertex_index = 0;
+    unsigned int texcoord_index = 0;
+    unsigned int normal_index = 0;
+    unsigned int face_index = 0;
 
+    rewind(handle);
     while (fgets(line, MAX_LEN, handle)) {
         if (line[0] == 'v') {
             if (line[1] == ' ') {
-                sscanf(line, "v %f %f %f", &obj->vertices[vertexIndex].x, &obj->vertices[vertexIndex].y, &obj->vertices[vertexIndex].z);
-                vertexIndex++;
-            } else if (line[1] == 't') {
-                sscanf(line, "vt %f %f", &obj->texCoords[texCoordIndex].u, &obj->texCoords[texCoordIndex].v);
-                texCoordIndex++;
-            } else if (line[1] == 'n') {
-                sscanf(line, "vn %f %f %f", &obj->normals[normalIndex].x, &obj->normals[normalIndex].y, &obj->normals[normalIndex].z);
-                normalIndex++;
-            }
-        } else if (line[0] == 'f') {
-            int v1 = -1, vt1 = -1, vn1 = -1;
-            int v2 = -1, vt2 = -1, vn2 = -1;
-            int v3 = -1, vt3 = -1, vn3 = -1;
-
-            if (sscanf(line, "f %i/%i/%i %i/%i/%i %i/%i/%i", &v1, &vt1, &vn1, &v2, &vt2, &vn2, &v3, &vt3, &vn3) == 9 ||
-                sscanf(line, "f %i//%i %i//%i %i//%i", &v1, &vn1, &v2, &vn2, &v3, &vn3) == 6 ||
-                sscanf(line, "f %i/%i %i/%i %i/%i", &v1, &vt1, &v2, &vt2, &v3, &vt3) == 6) {
-                obj->faces[faceIndex].v1 = v1;
-                obj->faces[faceIndex].vt1 = vt1;
-                obj->faces[faceIndex].vn1 = vn1;
-                obj->faces[faceIndex].v2 = v2;
-                obj->faces[faceIndex].vt2 = vt2;
-                obj->faces[faceIndex].vn2 = vn2;
-                obj->faces[faceIndex].v3 = v3;
-                obj->faces[faceIndex].vt3 = vt3;
-                obj->faces[faceIndex].vn3 = vn3;
-
-                // Assemble the full vertices for the face
-                for (int i = 0; i < 3; i++) {
-                    int vIndex = (i == 0) ? v1 : (i == 1) ? v2 : v3;
-                    int vtIndex = (i == 0) ? vt1 : (i == 1) ? vt2 : vt3;
-                    int vnIndex = (i == 0) ? vn1 : (i == 1) ? vn2 : vn3;
-
-                    if (vIndex > 0 && vIndex <= obj->numVertices) {
-                        obj->fullVertices[fullVertexIndex].vertex = obj->vertices[vIndex - 1];
-                    }
-
-                    if (vtIndex > 0 && vtIndex <= obj->numTexCoords) {
-                        obj->fullVertices[fullVertexIndex].texCoord = obj->texCoords[vtIndex - 1];
-                        obj->fullVertices[fullVertexIndex].hasTexCoord = 1;
-                    } else {
-                        obj->fullVertices[fullVertexIndex].hasTexCoord = 0;
-                    }
-
-                    if (vnIndex > 0 && vnIndex <= obj->numNormals) {
-                        obj->fullVertices[fullVertexIndex].normal = obj->normals[vnIndex - 1];
-                        obj->fullVertices[fullVertexIndex].hasNormal = 1;
-                    } else {
-                        obj->fullVertices[fullVertexIndex].hasNormal = 0;
-                    }
-
-                    fullVertexIndex++;
+                if (sscanf(line, "v %f %f %f",
+                           &obj->vertices[vertex_index].x,
+                           &obj->vertices[vertex_index].y,
+                           &obj->vertices[vertex_index].z) != 3) {
+                    fprintf(stderr, "Invalid vertex format\n");
+                    fclose(handle);
+                    free(obj);
+                    return NULL;
                 }
 
-                faceIndex++;
+                vertex_index++;
+            } else if (line[1] == 't') {
+                if (sscanf(line, "vt %f %f",
+                           &obj->texcoords[texcoord_index].u,
+                           &obj->texcoords[texcoord_index].v) != 2) {
+                    fprintf(stderr, "Invalid texcoord format\n");
+                    fclose(handle);
+                    free(obj);
+                    return NULL;
+                }
+
+                texcoord_index++;
+            } else if (line[1] == 'n') {
+                if (sscanf(line, "vn %f %f %f",
+                           &obj->normals[normal_index].x,
+                           &obj->normals[normal_index].y,
+                           &obj->normals[normal_index].z) != 3) {
+                    fprintf(stderr, "Invalid normal format\n");
+                    fclose(handle);
+                    free(obj);
+                    return NULL;
+                }
+
+                normal_index++;
             }
+        } else if (line[0] == 'f') {
+            if (sscanf(line, "f %i/%i/%i %i/%i/%i %i/%i/%i",
+                       &obj->faces[face_index + 0].x,
+                       &obj->faces[face_index + 0].y,
+                       &obj->faces[face_index + 0].z,
+
+                       &obj->faces[face_index + 1].x,
+                       &obj->faces[face_index + 1].y,
+                       &obj->faces[face_index + 1].z,
+
+                       &obj->faces[face_index + 2].x,
+                       &obj->faces[face_index + 2].y,
+                       &obj->faces[face_index + 2].z) != 9) {
+                fprintf(stderr, "Invalid face format\n");
+                fclose(handle);
+                free(obj);
+                return NULL;
+            }
+
+            face_index += 3;
         }
     }
-
-    fclose(handle);
 
     return obj;
 }
 
 void obj_free(obj_t *obj) {
-    if (obj) {
+    if (obj->name != NULL)
+        free(obj->name);
+    if (obj->vertices != NULL)
         free(obj->vertices);
-        free(obj->texCoords);
+    if (obj->texcoords != NULL)
+        free(obj->texcoords);
+    if (obj->normals != NULL)
         free(obj->normals);
-        free(obj->faces);
-        free(obj->fullVertices);
-        free(obj);
-    }
+    free(obj);
 }

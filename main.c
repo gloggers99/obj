@@ -7,20 +7,19 @@
 
 int main() {
     clock_t start = clock() / (CLOCKS_PER_SEC / 1000);
-    const char *filename = "armadillo.obj";
-    obj_t *obj = obj_load(filename);
+    const char *filename = "test.obj";
+    obj_t *obj = obj_load("test.obj");
     clock_t end = clock() / (CLOCKS_PER_SEC / 1000);
     if (obj == NULL) {
         fprintf(stderr, "Failed to load OBJ file.\n");
         return 1;
     }
 
+    printf("%s\n", obj->name);
+
     printf("Loaded OBJ file in %ldms\n", end - start);
 
-    // Add your code here to use the loaded obj
-    printf("vertex X: %f\n", obj->fullVertices[0].vertex.x);
-    printf("vertex Y: %f\n", obj->fullVertices[0].vertex.y);
-    printf("vertex Z: %f\n", obj->fullVertices[0].vertex.z);
+    obj_free(obj);
 
     return 0;
 }
