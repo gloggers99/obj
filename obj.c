@@ -4,6 +4,14 @@
 #include <string.h>
 #include <malloc.h>
 
+void obj_print(obj_t *obj) {
+    printf("vertices {\n");
+    for (int i = 0; i < obj->vertex_count; i++) {
+        printf("\tv %i: x: %f, y: %f, z: %f\n", i, obj->vertices[i].x, obj->vertices[i].y, obj->vertices[i].z);
+    }
+    printf("}\n");
+}
+
 obj_t *obj_load(const char *file) {
     FILE *handle = fopen(file, "r");
 

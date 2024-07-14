@@ -35,6 +35,8 @@ typedef struct obj {
     face_t *faces;
 } obj_t;
 
+void obj_print(obj_t *obj);
+
 obj_t *obj_load(const char *file);
 void obj_free(obj_t *obj);
 

@@ -19,6 +19,8 @@ int main() {
 
     printf("Loaded OBJ file in %ldms\n", end - start);
 
+    obj_print(obj);
+
     obj_free(obj);
 
     return 0;
