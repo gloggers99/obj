@@ -130,6 +130,45 @@ obj_t *obj_load(const char *file) {
         }
     }
 
+    complete_vertex_t *vertex_data = malloc(obj->vertex_count * sizeof(complete_vertex_t));
+    obj->indices = malloc(obj->face_count * sizeof(unsigned int));
+
+    for (size_t i = 0; i < obj->vertex_count; ++i) {
+        vertex_data[i].vertex.x = obj->vertices[i].x;
+        vertex_data[i].vertex.y = obj->vertices[i].y;
+        vertex_data[i].vertex.z = obj->vertices[i].z;
+
+        if (i < obj->texcoord_count) {
+            vertex_data[i].texcoord.u = obj->texcoords[i].u;
+            vertex_data[i].texcoord.v = obj->texcoords[i].v;
+        } else {
+            vertex_data[i].texcoord.u = 0.0f;
+            vertex_data[i].texcoord.v = 0.0f;
+        }
+
+        if (i < obj->normal_count) {
+            vertex_data[i].normal.x = obj->normals[i].x;
+            vertex_data[i].normal.y = obj->normals[i].y;
+            vertex_data[i].normal.z = obj->normals[i].z;
+        } else {
+            vertex_data[i].normal.x = 0.0f;
+            vertex_data[i].normal.y = 0.0f;
+            vertex_data[i].normal.z = 0.0f;
+        }
+    }
+
+    obj->complete_vertices = vertex_data;
+
+    obj->index_count = 0;
+
+    for (size_t i = 0; i < obj->face_count; ++i) {
+        obj->indices[i] = obj->faces[i].x - 1;
+        obj->indices[i + 1] = obj->faces[i].y - 1;
+        obj->indices[i + 2] = obj->faces[i].z - 1;
+
+        obj->index_count += 3;
+    }
+
     return obj;
 }
 

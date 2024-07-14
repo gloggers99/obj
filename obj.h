@@ -21,6 +21,12 @@ typedef struct face {
     int x, y, z;
 } face_t;
 
+typedef struct complete_vertex {
+    vertex_t vertex;
+    texcoord_t texcoord;
+    normal_t normal;
+} complete_vertex_t;
+
 typedef struct obj {
     char *name;
 
@@ -33,6 +39,12 @@ typedef struct obj {
     texcoord_t *texcoords;
     normal_t *normals;
     face_t *faces;
+
+    size_t complete_vertex_count;
+    complete_vertex_t *complete_vertices;
+
+    size_t index_count;
+    unsigned int *indices;
 } obj_t;
 
 void obj_print(obj_t *obj);
